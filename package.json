@@ -33,6 +33,7 @@
     "test:coverage": "yarn test -- --coverage",
     "prepublish": "yarn docs && yarn build",
     "prepare": "yarn docs && yarn build",
+    "prepack": "yarn docs && yarn build",
     "docs": "rimraf docs && typedoc --plugin typedoc-plugin-markdown --out docs src"
   },
   "husky": {

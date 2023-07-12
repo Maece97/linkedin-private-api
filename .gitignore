@@ -6,3 +6,5 @@ sessions.json
 .DS_Store
 coverage
 .idea/
+
+.yarn
