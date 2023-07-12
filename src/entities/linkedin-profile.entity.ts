@@ -76,4 +76,5 @@ export interface LinkedInProfile {
   supportedLocales: LinkedInPrimaryLocale[];
   trackingId: string;
   versionTag: string;
+  summary: string;
 }

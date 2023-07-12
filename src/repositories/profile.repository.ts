@@ -1,12 +1,12 @@
 import { filter, get, keyBy, map } from 'lodash';
 
 import { Client } from '../core/client';
-import { COMPANY_TYPE, LinkedInCompany } from '../entities/linkedin-company.entity';
+import { LinkedInCompany } from '../entities/linkedin-company.entity';
 import { LinkedInMiniProfile, MINI_PROFILE_TYPE } from '../entities/linkedin-mini-profile.entity';
-import { LinkedInProfile, PROFILE_TYPE } from '../entities/linkedin-profile.entity';
+import { LinkedInProfile } from '../entities/linkedin-profile.entity';
 import { LinkedInVectorImage } from '../entities/linkedin-vector-image.entity';
 import { MiniProfile, ProfileId } from '../entities/mini-profile.entity';
-import { Profile } from '../entities/profile.entity';
+import { Education, Profile } from '../entities/profile.entity';
 
 const getProfilePictureUrls = (picture?: LinkedInVectorImage): string[] =>
   map(picture?.artifacts, artifact => `${picture?.rootUrl}${artifact.fileIdentifyingUrlPathSegment}`);
@@ -37,16 +37,60 @@ export class ProfileRepository {
   async getProfile({ publicIdentifier }: { publicIdentifier: string }): Promise<Profile> {
     const response = await this.client.request.profile.getProfile({ publicIdentifier });
 
-    const results = response.included || [];
-
-    const profile = results.find(r => r.$type === PROFILE_TYPE && r.publicIdentifier === publicIdentifier) as LinkedInProfile;
-    const company = results.find(r => r.$type === COMPANY_TYPE && profile.headline.includes(r.name)) as LinkedInCompany;
-    const pictureUrls = getProfilePictureUrls(get(profile, 'profilePicture.displayImageReference.vectorImage', {}));
+    const profile = response?.included?.find(x => x.entityUrn === response.data['*elements'][0]) as LinkedInProfile;
+    const company = {} as LinkedInCompany;
+    const education = this.getEducation(response?.included, profile['*profileEducations']);
 
     return {
-      ...profile,
+      firstName: profile.firstName,
+      lastName: profile.lastName,
+      summary: profile.summary,
       company,
-      pictureUrls,
+      education,
+      pictureUrls: getProfilePictureUrls(get(profile, 'profilePicture.displayImageReference.vectorImage', {})),
+    };
+
+    // const results = response.included || [];
+
+    // const profile = results.find(r => r.$type === PROFILE_TYPE && r.publicIdentifier === publicIdentifier) as LinkedInProfile;
+    // const company = results.find(r => r.$type === COMPANY_TYPE && profile.headline.includes(r.name)) as LinkedInCompany;
+    // const pictureUrls = getProfilePictureUrls(get(profile, 'profilePicture.displayImageReference.vectorImage', {}));
+
+    // return {
+    //   ...profile,
+    //   company,
+    //   pictureUrls,
+    // };
+  }
+
+  private getEducation(data: any, urn: string): Education[] {
+    const edUrns = data.find((x: any) => x.entityUrn === urn)['*elements'];
+
+    const ed = edUrns.map((x: any) => {
+      const uni = data.find((y: any) => y.entityUrn === x);
+      return {
+        schoolName: uni.schoolName,
+        fieldOfStudy: uni.fieldOfStudy,
+        dateRange: this.mapDateRage(uni.dateRange),
+        description: uni.description,
+        degreeName: uni.degreeName,
+        grade: uni.grade,
+      };
+    });
+
+    return ed;
+  }
+
+  private mapDateRage(dateRange: any): any {
+    return {
+      start: {
+        month: dateRange?.start?.month || undefined,
+        year: dateRange?.start?.year || undefined,
+      },
+      end: {
+        month: dateRange?.end?.month || undefined,
+        year: dateRange?.end?.year || undefined,
+      },
     };
   }
 

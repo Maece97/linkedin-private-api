@@ -146,7 +146,7 @@ export class SearchRepository {
 
     const profiles = keyBy(getProfilesFromResponse<GetBlendedSearchResponse>(response), 'entityUrn');
     const searchHits = flatten(
-      response.data.elements.filter(e => e.type === SearchResultType.SEARCH_HITS && e.elements).map(e => e.elements!),
+      response.data['*elements'].filter(e => e.type === SearchResultType.SEARCH_HITS && e.elements).map(e => e.elements!),
     );
 
     return searchHits.map(searchHit => ({
@@ -180,7 +180,7 @@ export class SearchRepository {
 
     const companiesByUrn = keyBy(companies, 'entityUrn');
     const searchHits = flatten(
-      response.data.elements.filter(e => e.type === SearchResultType.SEARCH_HITS && e.elements).map(e => e.elements!),
+      response.data['*elements'].filter(e => e.type === SearchResultType.SEARCH_HITS && e.elements).map(e => e.elements!),
     );
 
     return searchHits.map(searchHit => ({
@@ -213,7 +213,7 @@ export class SearchRepository {
     const keyedPostings = keyBy(jobPostings, 'entityUrn');
     const keyedCompanies = keyBy(companies, 'entityUrn');
 
-    const searchHits = response?.data?.elements.map(searchHit => {
+    const searchHits = response?.data?.['*elements'].map(searchHit => {
       const jobPosting = keyedPostings[searchHit.hitInfo.jobPosting];
       const company = keyedCompanies[jobPosting.companyDetails.company];
 
