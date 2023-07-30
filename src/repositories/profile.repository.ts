@@ -6,7 +6,7 @@ import { LinkedInMiniProfile, MINI_PROFILE_TYPE } from '../entities/linkedin-min
 import { LinkedInProfile } from '../entities/linkedin-profile.entity';
 import { LinkedInVectorImage } from '../entities/linkedin-vector-image.entity';
 import { MiniProfile, ProfileId } from '../entities/mini-profile.entity';
-import { Education, Profile, Skill } from '../entities/profile.entity';
+import { Education, Language, Profile, Skill } from '../entities/profile.entity';
 
 const getProfilePictureUrls = (picture?: LinkedInVectorImage): string[] =>
   map(picture?.artifacts, artifact => `${picture?.rootUrl}${artifact.fileIdentifyingUrlPathSegment}`);
@@ -41,8 +41,6 @@ export class ProfileRepository {
     const company = {} as LinkedInCompany;
     const education = this.getEducation(response?.included, profile['*profileEducations']);
 
-    // console.log(response.included.find(x => x.entityUrn === profile['*profileSkills']));
-
     return {
       firstName: profile.firstName,
       lastName: profile.lastName,
@@ -50,6 +48,7 @@ export class ProfileRepository {
       company,
       education,
       skills: this.getSkills(response?.included, profile['*profileSkills']),
+      languages: this.getLanguages(response?.included, profile['*profileLanguages']),
       pictureUrls: getProfilePictureUrls(get(profile, 'profilePicture.displayImageReference.vectorImage', {})),
     };
 
@@ -86,6 +85,9 @@ export class ProfileRepository {
 
   private getSkills(data: any, urn: string): Skill[] {
     const skillUrns: string[] = data.find((x: any) => x.entityUrn === urn)['*elements'];
+    if (!skillUrns) {
+      return [];
+    }
 
     const skills = skillUrns.map(x => {
       const skill = data.find((y: any) => y.entityUrn === x);
@@ -95,6 +97,25 @@ export class ProfileRepository {
     });
 
     return skills;
+  }
+
+  private getLanguages(data: any, urn: string): Language[] {
+    const langUrns: string[] = data.find((x: any) => x.entityUrn === urn)['*elements'];
+    if (!langUrns) {
+      return [];
+    }
+    console.log(langUrns);
+
+    const langs = langUrns.map(x => {
+      const lang = data.find((y: any) => y.entityUrn === x);
+      console.log(lang);
+      return {
+        name: lang.name,
+        proficiency: lang.proficiency,
+      };
+    });
+
+    return langs;
   }
 
   private mapDateRage(dateRange: any): any {

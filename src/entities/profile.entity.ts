@@ -22,6 +22,11 @@ export interface Skill {
   name: string;
 }
 
+export interface Language {
+  name: string;
+  proficiency: string;
+}
+
 export interface Profile {
   firstName: string;
   lastName: string;
@@ -30,4 +35,5 @@ export interface Profile {
   education: Education[];
   pictureUrls: string[];
   skills: Skill[];
+  languages: Language[];
 }
