@@ -18,6 +18,10 @@ export interface Education {
   grade: string;
 }
 
+export interface Skill {
+  name: string;
+}
+
 export interface Profile {
   firstName: string;
   lastName: string;
@@ -25,4 +29,5 @@ export interface Profile {
   company: LinkedInCompany;
   education: Education[];
   pictureUrls: string[];
+  skills: Skill[];
 }
