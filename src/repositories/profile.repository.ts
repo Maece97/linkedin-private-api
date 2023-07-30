@@ -6,7 +6,7 @@ import { LinkedInMiniProfile, MINI_PROFILE_TYPE } from '../entities/linkedin-min
 import { LinkedInProfile } from '../entities/linkedin-profile.entity';
 import { LinkedInVectorImage } from '../entities/linkedin-vector-image.entity';
 import { MiniProfile, ProfileId } from '../entities/mini-profile.entity';
-import { Education, Language, Profile, Skill } from '../entities/profile.entity';
+import { Education, ProfileLanguage, Profile, Skill } from '../entities/profile.entity';
 
 const getProfilePictureUrls = (picture?: LinkedInVectorImage): string[] =>
   map(picture?.artifacts, artifact => `${picture?.rootUrl}${artifact.fileIdentifyingUrlPathSegment}`);
@@ -99,7 +99,7 @@ export class ProfileRepository {
     return skills;
   }
 
-  private getLanguages(data: any, urn: string): Language[] {
+  private getLanguages(data: any, urn: string): ProfileLanguage[] {
     const langUrns: string[] = data.find((x: any) => x.entityUrn === urn)['*elements'];
     if (!langUrns) {
       return [];

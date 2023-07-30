@@ -22,7 +22,7 @@ export interface Skill {
   name: string;
 }
 
-export interface Language {
+export interface ProfileLanguage {
   name: string;
   proficiency: string;
 }
@@ -35,5 +35,5 @@ export interface Profile {
   education: Education[];
   pictureUrls: string[];
   skills: Skill[];
-  languages: Language[];
+  languages: ProfileLanguage[];
 }
