@@ -1,4 +1,4 @@
-type DateRange = {
+export type DateRange = {
   start: {
     year: number;
     month: number;
