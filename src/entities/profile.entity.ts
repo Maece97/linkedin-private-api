@@ -1,18 +1,18 @@
-import { LinkedInCompany } from './linkedin-company.entity';
+type DateRange = {
+  start: {
+    year: number;
+    month: number;
+  };
+  end: {
+    year: number;
+    month: number;
+  };
+};
 
 export interface Education {
   schoolName: string;
   fieldOfStudy: string;
-  dateRange: {
-    start: {
-      year: number;
-      month: number;
-    };
-    end: {
-      year: number;
-      month: number;
-    };
-  };
+  dateRange: DateRange;
   description: string;
   degreeName: string;
   grade: string;
@@ -27,13 +27,20 @@ export interface ProfileLanguage {
   proficiency: string;
 }
 
+export interface Work {
+  name: string;
+  position: string;
+  dateRange: DateRange;
+  summary: string;
+}
+
 export interface Profile {
   firstName: string;
   lastName: string;
   summary: string;
-  company: LinkedInCompany;
   education: Education[];
   pictureUrls: string[];
   skills: Skill[];
   languages: ProfileLanguage[];
+  work: Work[];
 }

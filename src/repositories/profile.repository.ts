@@ -1,12 +1,12 @@
 import { filter, get, keyBy, map } from 'lodash';
 
 import { Client } from '../core/client';
-import { LinkedInCompany } from '../entities/linkedin-company.entity';
 import { LinkedInMiniProfile, MINI_PROFILE_TYPE } from '../entities/linkedin-mini-profile.entity';
 import { LinkedInProfile } from '../entities/linkedin-profile.entity';
 import { LinkedInVectorImage } from '../entities/linkedin-vector-image.entity';
 import { MiniProfile, ProfileId } from '../entities/mini-profile.entity';
-import { Education, ProfileLanguage, Profile, Skill } from '../entities/profile.entity';
+import { Education, ProfileLanguage, Profile, Skill, Work } from '../entities/profile.entity';
+import _ from 'lodash';
 
 const getProfilePictureUrls = (picture?: LinkedInVectorImage): string[] =>
   map(picture?.artifacts, artifact => `${picture?.rootUrl}${artifact.fileIdentifyingUrlPathSegment}`);
@@ -27,8 +27,23 @@ export const getProfilesFromResponse = <T extends { included: (LinkedInMiniProfi
   return keyBy(transformedMiniProfiles, 'profileId');
 };
 
+const mapDateRage = (dateRange: any): any => {
+  return {
+    start: {
+      month: dateRange?.start?.month || undefined,
+      year: dateRange?.start?.year || undefined,
+    },
+    end: {
+      month: dateRange?.end?.month || undefined,
+      year: dateRange?.end?.year || undefined,
+    },
+  };
+};
+
 export class ProfileRepository {
   private client: Client;
+
+  private data: any;
 
   constructor({ client }: { client: Client }) {
     this.client = client;
@@ -37,18 +52,18 @@ export class ProfileRepository {
   async getProfile({ publicIdentifier }: { publicIdentifier: string }): Promise<Profile> {
     const response = await this.client.request.profile.getProfile({ publicIdentifier });
 
+    this.data = response.included;
+
     const profile = response?.included?.find(x => x.entityUrn === response.data['*elements'][0]) as LinkedInProfile;
-    const company = {} as LinkedInCompany;
-    const education = this.getEducation(response?.included, profile['*profileEducations']);
 
     return {
       firstName: profile.firstName,
       lastName: profile.lastName,
       summary: profile.summary,
-      company,
-      education,
-      skills: this.getSkills(response?.included, profile['*profileSkills']),
-      languages: this.getLanguages(response?.included, profile['*profileLanguages']),
+      education: this.mapLinkedInDataToSection(profile['*profileEducations'], this.educationMapper),
+      work: this.mapLinkedInDataToSection(profile['*profilePositionGroups'], x => this.workMapper(x)),
+      skills: this.mapLinkedInDataToSection(profile['*profileSkills'], this.skillsMapper),
+      languages: this.mapLinkedInDataToSection(profile['*profileLanguages'], this.languageMapper),
       pictureUrls: getProfilePictureUrls(get(profile, 'profilePicture.displayImageReference.vectorImage', {})),
     };
 
@@ -65,69 +80,56 @@ export class ProfileRepository {
     // };
   }
 
-  private getEducation(data: any, urn: string): Education[] {
-    const edUrns: string[] = data.find((x: any) => x.entityUrn === urn)['*elements'];
+  private mapLinkedInDataToSection<T>(urn: string, mapper: (x: any) => T | T[]): T[] {
+    const urns = this.data.find((x: any) => x.entityUrn === urn)['*elements'];
 
-    const ed = edUrns.map(x => {
-      const uni = data.find((y: any) => y.entityUrn === x);
-      return {
-        schoolName: uni.schoolName,
-        fieldOfStudy: uni.fieldOfStudy,
-        dateRange: this.mapDateRage(uni.dateRange),
-        description: uni.description,
-        degreeName: uni.degreeName,
-        grade: uni.grade,
-      };
-    });
-
-    return ed;
-  }
-
-  private getSkills(data: any, urn: string): Skill[] {
-    const skillUrns: string[] = data.find((x: any) => x.entityUrn === urn)['*elements'];
-    if (!skillUrns) {
+    if (!urns) {
       return [];
     }
 
-    const skills = skillUrns.map(x => {
-      const skill = data.find((y: any) => y.entityUrn === x);
-      return {
-        name: skill.name,
-      };
-    });
-
-    return skills;
+    return _.flatten(
+      urns.map((x: any) => {
+        console.log(typeof this);
+        const data = this.data.find((y: any) => y.entityUrn === x);
+        return mapper(data);
+      }),
+    );
   }
 
-  private getLanguages(data: any, urn: string): ProfileLanguage[] {
-    const langUrns: string[] = data.find((x: any) => x.entityUrn === urn)['*elements'];
-    if (!langUrns) {
-      return [];
-    }
-    console.log(langUrns);
-
-    const langs = langUrns.map(x => {
-      const lang = data.find((y: any) => y.entityUrn === x);
-      console.log(lang);
-      return {
-        name: lang.name,
-        proficiency: lang.proficiency,
-      };
-    });
-
-    return langs;
-  }
-
-  private mapDateRage(dateRange: any): any {
+  private educationMapper(x: any): Education {
     return {
-      start: {
-        month: dateRange?.start?.month || undefined,
-        year: dateRange?.start?.year || undefined,
-      },
-      end: {
-        month: dateRange?.end?.month || undefined,
-        year: dateRange?.end?.year || undefined,
-      },
+      schoolName: x.schoolName,
+      fieldOfStudy: x.fieldOfStudy,
+      dateRange: mapDateRage(x.dateRange),
+      description: x.description,
+      degreeName: x.degreeName,
+      grade: x.grade,
+    };
+  }
+
+  private workMapper(x: any): Work[] {
+    return this.mapLinkedInDataToSection(x['*profilePositionInPositionGroup'], (y: any) => this.positionMapper(y));
+  }
+
+  private positionMapper(x: any): Work {
+    return {
+      position: x.title,
+      name: x.companyName,
+      dateRange: mapDateRage(x.dateRange),
+      summary: x.description,
+    };
+  }
+
+  private skillsMapper(x: any): Skill {
+    return {
+      name: x.name,
+    };
+  }
+
+  private languageMapper(x: any): ProfileLanguage {
+    return {
+      name: x.name,
+      proficiency: x.proficiency,
     };
   }
 
